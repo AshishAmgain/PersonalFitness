@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fitness Trainer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+        .exercise-card {
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.3s;
+            cursor: pointer;
+            height: 100%;
+        }
+        .exercise-card:hover {
+            transform: translateY(-5px);
+        }
+        .exercise-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            color: #0d6efd;
+        }
+        .upload-area {
+            border: 2px dashed #dee2e6;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            margin: 30px 0;
+            background-color: white;
+        }
+        .upload-area.dragover {
+            border-color: #0d6efd;
+            background-color: #f8f9ff;
+        }
+        .muscle-groups {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        .results-card {
+            display: none;
+            margin-top: 30px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+        }
+        .results-card.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background-color: #0d6efd;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin: 20px auto;
+        }
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .loading-overlay.show {
+            opacity: 1;
+        }
+        .spinner-border {
+            width: 4rem;
+            height: 4rem;
+            margin-bottom: 1rem;
+            animation: spin 1s linear infinite, pulse 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        .loading-text {
+            animation: fade 2s ease-in-out infinite;
+        }
+        @keyframes fade {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+        .leaderboard-card {
+            margin-top: 30px;
+            display: none;
+        }
+        .leaderboard-table {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .leaderboard-table th {
+            background: #0d6efd;
+            color: white;
+            padding: 15px;
+        }
+        .leaderboard-row {
+            animation: slideIn 0.5s ease-out forwards;
+            opacity: 0;
+            transform: translateX(-20px);
+        }
+        @keyframes slideIn {
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        .medal {
+            font-size: 1.2rem;
+            margin-right: 5px;
+        }
+        .achievement-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            margin: 2px;
+            color: white;
+            background: #198754;
+        }
+        .toggle-leaderboard {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 30px;
+            background: #0d6efd;
+            color: white;
+            border: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        .toggle-leaderboard:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+        }
+        .feedback-detail {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            text-align: left;
+        }
+        .feedback-item {
+            margin: 10px 0;
+            padding: 10px;
+            border-left: 4px solid;
+            background: white;
+        }
+        .feedback-good {
+            border-color: #198754;
+        }
+        .feedback-improve {
+            border-color: #dc3545;
+        }
+        .feedback-tip {
+            border-color: #0dcaf0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Add toggle leaderboard button -->
+    <button class="toggle-leaderboard" id="toggleLeaderboard">
+        🏆 Show Leaderboard
+    </button>
+
+    <!-- Add loading overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <h4 class="loading-text">Analyzing Exercise Video...</h4>
+        <p class="text-muted loading-text">Please wait while we process your form</p>
+    </div>
+
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col-12 text-center">
+                <h1 class="mb-4">Fitness Trainer</h1>
+                <input type="text" class="form-control form-control-lg mb-4" id="userName" placeholder="Enter your name" style="max-width: 400px; margin: 0 auto;">
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- Push-ups -->
+            <div class="col-md-4">
+                <div class="exercise-card shadow-sm bg-white" onclick="selectExercise('push_up')">
+                    <div class="exercise-icon">🏋️</div>
+                    <h3>Push-ups</h3>
+                    <p class="muscle-groups">Chest, Triceps</p>
+                </div>
+            </div>
+
+            <!-- Squats -->
+            <div class="col-md-4">
+                <div class="exercise-card shadow-sm bg-white" onclick="selectExercise('squat')">
+                    <div class="exercise-icon">🏃</div>
+                    <h3>Squats</h3>
+                    <p class="muscle-groups">Legs, Core</p>
+                </div>
+            </div>
+
+            <!-- Hammer Curls -->
+            <div class="col-md-4">
+                <div class="exercise-card shadow-sm bg-white" onclick="selectExercise('hammer_curl')">
+                    <div class="exercise-icon">💪</div>
+                    <h3>Hammer Curls</h3>
+                    <p class="muscle-groups">Biceps, Forearms</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="upload-area" id="uploadArea">
+            <div style="font-size: 64px; margin-bottom: 20px;">📁</div>
+            <h3>Choose a video file</h3>
+            <p class="text-muted">Maximum file size: 100MB</p>
+            <input type="file" id="videoInput" accept=".mp4,.avi,.mov" style="display: none;">
+            <button class="btn btn-primary btn-lg" onclick="document.getElementById('videoInput').click()">
+                Upload & Analyze
+            </button>
+            <p class="mt-3">or</p>
+            <button class="btn btn-success btn-lg" onclick="startLiveVideo()">Start Live Video</button>
+        </div>
+
+        <div class="card results-card" id="resultsCard">
+            <div class="card-body text-center">
+                <h2>Exercise Results</h2>
+                <div class="score-circle">
+                    <span id="totalScore">0</span>
+                </div>
+                <div class="row mt-4">
+                    <div class="col-md-4">
+                        <h4>Reps Completed</h4>
+                        <p id="repsCompleted">0</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h4>Form Score</h4>
+                        <p id="formScore">0%</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h4>Duration</h4>
+                        <p id="duration">0s</p>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <h4>Detailed Feedback</h4>
+                    <div class="feedback-detail" id="feedbackDetail">
+                        <!-- Feedback items will be added here dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add leaderboard section -->
+        <div class="card leaderboard-card" id="leaderboardCard">
+            <div class="card-body">
+                <h2 class="text-center mb-4">🏆 Leaderboard</h2>
+                <div class="table-responsive">
+                    <table class="table leaderboard-table">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Name</th>
+                                <th>Exercise</th>
+                                <th>Score</th>
+                                <th>Reps</th>
+                                <th>Form</th>
+                                <th>Duration</th>
+                                <th>Achievements</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboardBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedExercise = null;
+        const loadingOverlay = document.getElementById('loadingOverlay');
+
+        function showLoading() {
+            loadingOverlay.style.display = 'flex';
+            // Trigger reflow
+            loadingOverlay.offsetHeight;
+            loadingOverlay.classList.add('show');
+        }
+
+        function hideLoading() {
+            loadingOverlay.classList.remove('show');
+            setTimeout(() => {
+                loadingOverlay.style.display = 'none';
+            }, 300); // Match the transition duration
+        }
+
+        function selectExercise(exercise) {
+            selectedExercise = exercise;
+            document.querySelectorAll('.exercise-card').forEach(card => {
+                card.style.border = 'none';
+            });
+            event.currentTarget.style.border = '2px solid #0d6efd';
+        }
+
+        function startLiveVideo() {
+            if (!selectedExercise) {
+                alert('Please select an exercise first');
+                return;
+            }
+            fetch('http://localhost:3000/start-exercise', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    exercise: selectedExercise
+                })
+            });
+        }
+
+        function handleFileUpload(event) {
+            if (!selectedExercise) {
+                alert('Please select an exercise first');
+                return;
+            }
+
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Check file type
+            const allowedTypes = ['.mp4', '.avi', '.mov'];
+            const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+            if (!allowedTypes.includes(fileExtension)) {
+                alert('Please upload a valid video file (mp4, avi, or mov)');
+                return;
+            }
+
+            // Check file size (100MB max)
+            if (file.size > 100 * 1024 * 1024) {
+                alert('File size must be less than 100MB');
+                return;
+            }
+
+            // Hide any previous results and show loading
+            const resultsCard = document.getElementById('resultsCard');
+            if (resultsCard) {
+                resultsCard.style.display = 'none';
+                resultsCard.classList.remove('show');
+            }
+            showLoading();
+
+            const formData = new FormData();
+            formData.append('video', file);
+            formData.append('exercise_type', selectedExercise);
+
+            fetch('http://localhost:3000/upload-video', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                hideLoading();
+                if (data.status === 'error') {
+                    throw new Error(data.error || 'Error analyzing video');
+                }
+                if (data && typeof data === 'object') {
+                    displayResults(data);
+                } else {
+                    throw new Error('Invalid response from server');
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                console.error('Error:', error);
+                alert('Error uploading or analyzing video. Please try again.\nDetails: ' + error.message);
+                // Reset file input
+                const videoInput = document.getElementById('videoInput');
+                if (videoInput) {
+                    videoInput.value = '';
+                }
+            });
+        }
+
+        // Add file input change listener
+        const videoInput = document.getElementById('videoInput');
+        videoInput.addEventListener('change', handleFileUpload);
+
+        // Update upload area to show selected file name
+        function updateFileName(input) {
+            const fileName = input.files[0]?.name || 'No file selected';
+            const fileNameDisplay = document.createElement('p');
+            fileNameDisplay.className = 'mt-2 text-muted';
+            fileNameDisplay.textContent = `Selected file: ${fileName}`;
+            
+            // Remove any existing file name display
+            const existingDisplay = document.querySelector('.selected-file-name');
+            if (existingDisplay) {
+                existingDisplay.remove();
+            }
+            
+            // Add new file name display
+            input.parentElement.appendChild(fileNameDisplay);
+        }
+
+        // Update file input to show selected file
+        videoInput.addEventListener('change', function() {
+            updateFileName(this);
+        });
+
+        // Exercise tips
+        const tips = {
+            'push_up': [
+                'Keep your core tight throughout the movement',
+                'Maintain a straight line from head to heels',
+                'Lower your chest to 90 degrees',
+                'Keep your elbows at 45 degrees to your body'
+            ],
+            'squat': [
+                'Keep your chest up and back straight',
+                'Push your knees out in line with your toes',
+                'Go down until thighs are parallel to the ground',
+                'Keep your weight in your heels'
+            ],
+            'hammer_curl': [
+                'Keep your upper arms still against your sides',
+                'Control the movement both up and down',
+                'Maintain a neutral wrist position',
+                'Focus on squeezing your biceps at the top'
+            ]
+        };
+
+        function displayResults(data) {
+            // Get all required elements first and check if they exist
+            const resultsCard = document.getElementById('resultsCard');
+            const totalScoreElement = document.getElementById('totalScore');
+            const repsElement = document.getElementById('repsCompleted');
+            const formScoreElement = document.getElementById('formScore');
+            const durationElement = document.getElementById('duration');
+            const feedbackDetail = document.getElementById('feedbackDetail');
+
+            // Check if all required elements exist
+            if (!resultsCard || !totalScoreElement || !repsElement || 
+                !formScoreElement || !durationElement || !feedbackDetail) {
+                console.error('Required elements not found');
+                alert('Error displaying results. Please refresh the page and try again.');
+                return;
+            }
+
+            // Show results card
+            resultsCard.style.display = 'block';
+            resultsCard.classList.add('show');
+            
+            // Animate the score counting up
+            const targetScore = data.total_score;
+            let currentScore = 0;
+            const duration = 1000; // 1 second animation
+            const interval = 16; // 60fps
+            const steps = duration / interval;
+            const increment = targetScore / steps;
+            
+            const animation = setInterval(() => {
+                currentScore = Math.min(currentScore + increment, targetScore);
+                totalScoreElement.textContent = Math.round(currentScore);
+                if (currentScore >= targetScore) {
+                    clearInterval(animation);
+                }
+            }, interval);
+
+            // Update other results with animations
+            repsElement.textContent = data.reps_completed;
+            
+            // Animate form score
+            let currentFormScore = 0;
+            const formScoreAnimation = setInterval(() => {
+                currentFormScore = Math.min(currentFormScore + 1, data.form_score);
+                formScoreElement.textContent = currentFormScore.toFixed(1) + '%';
+                if (currentFormScore >= data.form_score) {
+                    clearInterval(formScoreAnimation);
+                }
+            }, duration / data.form_score);
+
+            durationElement.textContent = data.duration + 's';
+
+            // Generate and display detailed feedback
+            generateDetailedFeedback(data);
+
+            // Save to leaderboard and display it
+            try {
+                saveToLeaderboard(data);
+            } catch (error) {
+                console.error('Error saving to leaderboard:', error);
+            }
+
+            // Scroll to results
+            resultsCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // Add leaderboard functionality
+        function saveToLeaderboard(data) {
+            const userName = document.getElementById('userName').value || 'Anonymous';
+            const leaderboardEntry = {
+                name: userName,
+                exercise: selectedExercise,
+                score: data.total_score,
+                reps: data.reps_completed,
+                form: data.form_score,
+                duration: data.duration,
+                timestamp: new Date().getTime(),
+                achievements: calculateAchievements(data)
+            };
+
+            // Get existing leaderboard
+            let leaderboard = JSON.parse(localStorage.getItem('fitnessLeaderboard') || '[]');
+            leaderboard.push(leaderboardEntry);
+            
+            // Sort by score (descending)
+            leaderboard.sort((a, b) => b.score - a.score);
+            
+            // Keep only top 10 entries
+            leaderboard = leaderboard.slice(0, 10);
+            
+            // Save to localStorage
+            localStorage.setItem('fitnessLeaderboard', JSON.stringify(leaderboard));
+            
+            // Update leaderboard display
+            displayLeaderboard();
+        }
+
+        function calculateAchievements(data) {
+            const achievements = [];
+            
+            if (data.form_score >= 90) achievements.push('Perfect Form 🎯');
+            if (data.reps_completed >= 10) achievements.push('Endurance King 👑');
+            if (data.total_score >= 100) achievements.push('High Scorer 🌟');
+            if (data.duration < 30) achievements.push('Speed Demon ⚡');
+            
+            return achievements;
+        }
+
+        function displayLeaderboard() {
+            const leaderboard = JSON.parse(localStorage.getItem('fitnessLeaderboard') || '[]');
+            const leaderboardBody = document.getElementById('leaderboardBody');
+            const leaderboardCard = document.getElementById('leaderboardCard');
+            
+            leaderboardBody.innerHTML = '';
+            
+            leaderboard.forEach((entry, index) => {
+                const row = document.createElement('tr');
+                row.className = 'leaderboard-row';
+                row.style.animationDelay = `${index * 0.1}s`;
+                
+                const medal = index < 3 ? ['🥇', '🥈', '🥉'][index] : '';
+                
+                row.innerHTML = `
+                    <td>${medal} ${index + 1}</td>
+                    <td>${entry.name}</td>
+                    <td>${entry.exercise.replace('_', ' ').toUpperCase()}</td>
+                    <td>${entry.score}</td>
+                    <td>${entry.reps}</td>
+                    <td>${entry.form.toFixed(1)}%</td>
+                    <td>${entry.duration}s</td>
+                    <td>${entry.achievements.map(a => `<span class="achievement-badge">${a}</span>`).join(' ')}</td>
+                `;
+                
+                leaderboardBody.appendChild(row);
+            });
+            
+            leaderboardCard.style.display = 'block';
+        }
+
+        // Initialize leaderboard on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            displayLeaderboard();
+        });
+
+        // Drag and drop handling
+        const uploadArea = document.getElementById('uploadArea');
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                videoInput.files = e.dataTransfer.files;
+                handleFileUpload({ target: { files: [file] } });
+            }
+        });
+
+        // Add leaderboard toggle functionality
+        const toggleLeaderboardBtn = document.getElementById('toggleLeaderboard');
+        const leaderboardCard = document.getElementById('leaderboardCard');
+        
+        toggleLeaderboardBtn.addEventListener('click', () => {
+            const isVisible = leaderboardCard.style.display === 'block';
+            leaderboardCard.style.display = isVisible ? 'none' : 'block';
+            toggleLeaderboardBtn.textContent = isVisible ? '🏆 Show Leaderboard' : '🏆 Hide Leaderboard';
+        });
+
+        function generateDetailedFeedback(data) {
+            const feedbackDetail = document.getElementById('feedbackDetail');
+            if (!feedbackDetail) {
+                console.error('Feedback detail element not found');
+                return;
+            }
+
+            feedbackDetail.innerHTML = '';
+
+            try {
+                // Performance feedback
+                const performanceFeedback = document.createElement('div');
+                performanceFeedback.className = 'feedback-item feedback-good';
+                performanceFeedback.innerHTML = `
+                    <strong>Performance:</strong> You completed ${data.reps_completed} reps in ${data.duration}s
+                    with a form score of ${data.form_score.toFixed(1)}%.
+                `;
+                feedbackDetail.appendChild(performanceFeedback);
+
+                // Form feedback
+                const formFeedback = document.createElement('div');
+                formFeedback.className = `feedback-item ${data.form_score >= 80 ? 'feedback-good' : 'feedback-improve'}`;
+                if (data.form_score >= 80) {
+                    formFeedback.innerHTML = `
+                        <strong>Form Analysis:</strong> Excellent form! Keep maintaining this quality.
+                        Your movements are controlled and precise.
+                    `;
+                } else if (data.form_score >= 60) {
+                    formFeedback.innerHTML = `
+                        <strong>Form Analysis:</strong> Good effort, but there's room for improvement.
+                        Focus on maintaining proper form throughout the exercise.
+                    `;
+                } else {
+                    formFeedback.innerHTML = `
+                        <strong>Form Analysis:</strong> Your form needs attention. Focus on proper technique
+                        before increasing reps or speed.
+                    `;
+                }
+                feedbackDetail.appendChild(formFeedback);
+
+                // Exercise-specific tips
+                if (selectedExercise && tips[selectedExercise]) {
+                    const tipsFeedback = document.createElement('div');
+                    tipsFeedback.className = 'feedback-item feedback-tip';
+                    tipsFeedback.innerHTML = `<strong>Tips for ${selectedExercise.replace('_', ' ')}:</strong><br>`;
+                    tipsFeedback.innerHTML += tips[selectedExercise].map(tip => `• ${tip}`).join('<br>');
+                    feedbackDetail.appendChild(tipsFeedback);
+                }
+
+                // Add improvement suggestions based on form score
+                if (data.form_score < 90 && data.feedback) {
+                    const improvementFeedback = document.createElement('div');
+                    improvementFeedback.className = 'feedback-item feedback-improve';
+                    improvementFeedback.innerHTML = `
+                        <strong>Areas for Improvement:</strong><br>
+                        • ${data.feedback}<br>
+                        • Try reducing speed to focus on form<br>
+                        • Record yourself to check your technique<br>
+                        • Consider starting with easier variations
+                    `;
+                    feedbackDetail.appendChild(improvementFeedback);
+                }
+            } catch (error) {
+                console.error('Error generating feedback:', error);
+                feedbackDetail.innerHTML = '<div class="feedback-item feedback-improve">Error generating feedback. Please try again.</div>';
+            }
+        }
+    </script>
+</body>
+</html> 
