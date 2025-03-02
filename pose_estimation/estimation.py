@@ -23,11 +23,11 @@ class PoseEstimator:
             elif exercise_type == "push_up":
                 self.draw_push_up_lines(frame, results.pose_landmarks.landmark)
             elif exercise_type == "hammer_curl":
-                self.draw_hammerl_curl_lines(frame, results.pose_landmarks.landmark)
+                self.draw_hammer_curl_lines(frame, results.pose_landmarks.landmark)
 
         return results
-    def draw_hammerl_curl_lines(self, frame, landmarks):
 
+    def draw_hammer_curl_lines(self, frame, landmarks):
         shoulder_right = [int(landmarks[11].x * frame.shape[1]), int(landmarks[11].y * frame.shape[0])]
         elbow_right = [int(landmarks[13].x * frame.shape[1]), int(landmarks[13].y * frame.shape[0])]
         hip_right = [int(landmarks[23].x * frame.shape[1]), int(landmarks[23].y * frame.shape[0])]
@@ -40,13 +40,11 @@ class PoseEstimator:
         wrist_left = [int(landmarks[16].x * frame.shape[1]), int(landmarks[16].y * frame.shape[0])]
 
         # Draw lines with improved style
-        cv2.line(frame, shoulder_left, elbow_left, (0, 0, 255), 4,2)
-        cv2.line(frame, elbow_left, wrist_left, (0, 0, 255), 4,2)
+        cv2.line(frame, shoulder_left, elbow_left, (0, 0, 255), 4, 2)
+        cv2.line(frame, elbow_left, wrist_left, (0, 0, 255), 4, 2)
 
-        cv2.line(frame, shoulder_right, elbow_right, (0, 0, 255), 4,2)
-        cv2.line(frame, elbow_right, wrist_right, (0, 0, 255), 4,2)
-
-
+        cv2.line(frame, shoulder_right, elbow_right, (0, 0, 255), 4, 2)
+        cv2.line(frame, elbow_right, wrist_right, (0, 0, 255), 4, 2)
 
     def draw_squat_lines(self, frame, landmarks):
         # Squat specific lines (hip, knee, shoulder)
@@ -79,3 +77,48 @@ class PoseEstimator:
         cv2.line(frame, elbow_left, wrist_left, (0, 0, 255), 2)
         cv2.line(frame, shoulder_right, elbow_right, (102, 0, 0), 2)
         cv2.line(frame, elbow_right, wrist_right, (102, 0, 0), 2)
+
+def open_exercise_window(exercise_type):
+    try:
+        cap = cv2.VideoCapture(0)  # Open the camera
+        if not cap.isOpened():
+            print("Error: Could not open camera.")
+            return
+
+        print(f"Starting {exercise_type} exercise...")
+
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret:
+                print("Error: Could not read frame.")
+                break
+
+            # Process the frame for pose estimation
+            pose_estimator = PoseEstimator()
+            pose_estimator.estimate_pose(frame, exercise_type)
+
+            # Display the frame
+            cv2.imshow(f'{exercise_type} Exercise', frame)
+
+            # Break the loop on 'q' key press
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+
+        cap.release()
+        cv2.destroyAllWindows()
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+# Example usage
+open_exercise_window('squat')
+
+def draw_ui_elements(frame, exercise_type, counter, angle, stage, feedback):
+    # Ensure stage is not None
+    if stage is None:
+        print("Warning: 'stage' is None. Setting default value.")
+        stage = "unknown"  # Set a default value or handle as needed
+
+    stage_color = (0, 0, 255) if stage.lower() == "down" else (0, 255, 0)
+
+    # Continue with the rest of your UI drawing logic
+    # ...

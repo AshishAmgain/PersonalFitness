@@ -22,8 +22,7 @@ To install and run the **AI-Powered Fitness Trainer Pose Estimation** project, f
 ### Step 1: Clone the Repository
 Clone the repository from GitHub to your local machine using the following command:
 
-```bash
-git clone https://github.com/yakupzengin/fitness-trainer-pose-estimation.git
+
 
 cd fitness-trainer-pose-estimation
 ```
@@ -42,7 +41,7 @@ python main.py
 ```
 
 ## Project Structure
-Here’s an overview of the folders and files in this project, along with their purposes:
+Here's an overview of the folders and files in this project, along with their purposes:
 
 * **assets/** : This folder contains sounds assets used for the user interface and feedback displays.
 * **data/**: Holds any datasets or configuration files needed for the pose estimation or workout tracking.
@@ -73,11 +72,7 @@ As this project evolves, the following features are planned for future releases:
 - **Voice Feedback**: Implementing voice feedback for form corrections and motivational cues during exercises.
 - **Mobile Support**: Developing a mobile version of the application for more convenience during workouts.
 
-## Contributing
 
-Contributions to improve this project are welcome! If you would like to contribute, please fork the repository and submit a pull request. You can also report any issues or suggest new features by opening an issue on GitHub.
 
-1. Fork the repository.
-2. Create a new branch.
-3. Make your changes.
-4. Submit a pull request.
+
+
