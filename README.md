@@ -1,4 +1,3 @@
-# AI-Powered Fitness Trainer Pose Estimation
 
 <img src="output/images/Screenshot%202024-09-08%20030742.png" alt="Workout Demo" width="500"/>
 <img src="output/images/Screenshot%202024-09-08%20030816.png" alt="Workout Demo" width="500"/>
