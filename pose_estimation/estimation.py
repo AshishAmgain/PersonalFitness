@@ -9,15 +9,15 @@ class PoseEstimator:
         self.mp_drawing = mp.solutions.drawing_utils
 
     def estimate_pose(self, frame, exercise_type):
-        # BGR to RGB
+
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
         # Pose estimate
         results = self.pose.process(rgb_frame)
 
-        # Draw landmarks and specific connections based on exercise type
+
         if results.pose_landmarks:
-            # Draw specific landmarks and connections based on exercise_type
+
             if exercise_type == "squat":
                 self.draw_squat_lines(frame, results.pose_landmarks.landmark)
             elif exercise_type == "push_up":
@@ -113,12 +113,11 @@ def open_exercise_window(exercise_type):
 open_exercise_window('squat')
 
 def draw_ui_elements(frame, exercise_type, counter, angle, stage, feedback):
-    # Ensure stage is not None
+    
     if stage is None:
         print("Warning: 'stage' is None. Setting default value.")
-        stage = "unknown"  # Set a default value or handle as needed
+        stage = "unknown"  
 
     stage_color = (0, 0, 255) if stage.lower() == "down" else (0, 255, 0)
 
-    # Continue with the rest of your UI drawing logic
-    # ...
+  
